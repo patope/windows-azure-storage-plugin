@@ -1,26 +1,21 @@
 package com.microsoftopentechnologies.windowsazurestorage;
 
-import java.io.IOException;
-import java.util.List;
-
-import javax.servlet.ServletException;
-
+import com.microsoftopentechnologies.windowsazurestorage.WAStoragePublisher.WAStorageDescriptor;
+import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
+import hudson.model.AbstractBuild;
+import hudson.model.Run;
 import jenkins.model.Jenkins;
-
+import jenkins.model.RunAction2;
 import org.acegisecurity.Authentication;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
-import hudson.model.AbstractBuild;
-import hudson.model.RunAction;
-import hudson.model.Run;
-
-import com.microsoftopentechnologies.windowsazurestorage.WAStoragePublisher;
-import com.microsoftopentechnologies.windowsazurestorage.WAStoragePublisher.WAStorageDescriptor;
-import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
+import javax.servlet.ServletException;
+import java.io.IOException;
+import java.util.List;
 
 
-public class AzureBlobAction implements RunAction {
+public class AzureBlobAction implements RunAction2 {
 	private final AbstractBuild build;
 	private final String storageAccountName;
 	private final String containerName;
@@ -61,7 +56,9 @@ public class AzureBlobAction implements RunAction {
 	public void onBuildComplete() {
 	}
 
-	public void onLoad() {
+	@Override
+	public void onLoad(Run<?, ?> r) {
+
 	}
 	
 	public AbstractBuild<?,?> getBuild() {
@@ -155,4 +152,5 @@ public class AzureBlobAction implements RunAction {
 		}
 		return false;
 	}
+
 }

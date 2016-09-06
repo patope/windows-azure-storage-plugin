@@ -341,7 +341,8 @@ public class AzureStorageBuilder extends Builder {
 
 		/**
 		 * Returns storage account object
-		 * 
+		 *
+		 * @param storageAccountName
 		 * @return StorageAccount
 		 */
 		public StorageAccountInfo getStorageAccount(String storageAccountName) {

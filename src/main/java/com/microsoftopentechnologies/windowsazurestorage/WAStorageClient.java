@@ -302,6 +302,7 @@ public class WAStorageClient {
 	 *            container name.
 	 * @param cntPubAccess
 	 *            denotes if container is publicly accessible.
+	 * @param cleanUpContainer
 	 * @param expFP
 	 *            File Path in ant glob syntax relative to CI tool workspace.
 	 * @param expVP
@@ -314,7 +315,6 @@ public class WAStorageClient {
 	 * @param contentType
 	 * @return filesUploaded number of files that are uploaded.
 	 * @throws WAStorageException
-	 * @throws Exception
 	 */
 	public static int upload(AbstractBuild<?, ?> build, BuildListener listener,
 							 StorageAccountInfo strAcc, String expContainerName,
