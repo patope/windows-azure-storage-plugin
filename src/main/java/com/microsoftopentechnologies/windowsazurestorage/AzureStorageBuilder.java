@@ -40,6 +40,8 @@ import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 
+import javax.annotation.CheckForNull;
+
 public class AzureStorageBuilder extends Builder {
 
 	private String storageAccName;
@@ -129,6 +131,12 @@ public class AzureStorageBuilder extends Builder {
 		try {
 			// Get storage account
 			strAcc = getDescriptor().getStorageAccount(storageAccName);
+			if (strAcc == null) {
+				listener.getLogger().println(
+						Messages.WAStoragePublisher_storage_account_err());
+				build.setResult(Result.UNSTABLE);
+				return false;
+			}
 
 			// Resolve container name
 			String expContainerName = Utils.replaceTokens(build, listener,
@@ -184,8 +192,8 @@ public class AzureStorageBuilder extends Builder {
 			}
 		} catch (Exception e) {
 			e.printStackTrace(listener.error(Messages
-					.AzureStorageBuilder_download_err(strAcc
-							.getStorageAccName())));
+					.AzureStorageBuilder_download_err(strAcc != null ?
+							strAcc.getStorageAccName() : storageAccName)));
 			build.setResult(Result.UNSTABLE);
 		}
 		return true;
@@ -329,14 +337,16 @@ public class AzureStorageBuilder extends Builder {
 			return Messages.AzureStorageBuilder_displayName();
 		}
 
+		@CheckForNull
 		public StorageAccountInfo[] getStorageAccounts() {
-			WAStoragePublisher.WAStorageDescriptor publisherDescriptor = Jenkins
-					.getInstance().getDescriptorByType(
+			Jenkins jenkins = Jenkins.getInstance();
+			if (jenkins == null) {
+				return null;
+			}
+			WAStoragePublisher.WAStorageDescriptor publisherDescriptor = jenkins.getDescriptorByType(
 							WAStoragePublisher.WAStorageDescriptor.class);
 
-			StorageAccountInfo[] sa = publisherDescriptor.getStorageAccounts();
-
-			return sa;
+			return publisherDescriptor.getStorageAccounts();
 		}
 
 		/**

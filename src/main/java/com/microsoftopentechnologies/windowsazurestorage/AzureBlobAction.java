@@ -10,6 +10,7 @@ import org.acegisecurity.Authentication;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
+import javax.annotation.CheckForNull;
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.util.List;
@@ -80,9 +81,14 @@ public class AzureBlobAction implements RunAction2 {
 	public boolean getAllowAnonymousAccess() {
 		return allowAnonymousAccess;
 	}
-	
+
+	@CheckForNull
 	private WAStoragePublisher.WAStorageDescriptor getWAStorageDescriptor() {
-		WAStoragePublisher.WAStorageDescriptor desc = Jenkins.getInstance().getDescriptorByType(WAStoragePublisher.WAStorageDescriptor.class);
+		Jenkins jenkins = Jenkins.getInstance();
+		if (jenkins == null) {
+			return null;
+		}
+		WAStoragePublisher.WAStorageDescriptor desc = jenkins.getDescriptorByType(WAStoragePublisher.WAStorageDescriptor.class);
 		return desc;
 	}
 	
@@ -99,6 +105,9 @@ public class AzureBlobAction implements RunAction2 {
 	
 	public void doProcessDownloadRequest(final StaplerRequest request, final StaplerResponse response) throws IOException, ServletException {
 		WAStorageDescriptor storageDesc = getWAStorageDescriptor();
+		if (storageDesc == null) {
+			return;
+		}
 		StorageAccountInfo accountInfo  = storageDesc.getStorageAccount(storageAccountName);
 		
 		if (accountInfo == null) {

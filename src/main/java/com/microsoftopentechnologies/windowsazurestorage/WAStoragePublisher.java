@@ -297,18 +297,7 @@ public class WAStoragePublisher extends Recorder {
 	 * @return StorageAccount
 	 */
 	public StorageAccountInfo getStorageAccount() {
-		StorageAccountInfo storageAcc = null;
-		for (StorageAccountInfo sa : getDescriptor().getStorageAccounts()) {
-			if (sa.getStorageAccName().equals(storageAccName)) {
-				storageAcc = sa;
-				if (storageAcc != null) {
-					storageAcc.setBlobEndPointURL(Utils.getBlobEP(
-							storageAcc.getBlobEndPointURL()));
-				}
-				break;
-			}
-		}
-		return storageAcc;
+		return getDescriptor().getStorageAccount(storageAccName);
 	}
 
 	public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
@@ -589,12 +578,9 @@ public class WAStoragePublisher extends Recorder {
 				for (StorageAccountInfo sa : storageAccounts) {
 					if (sa.getStorageAccName().equals(name)) {
 						storageAccountInfo = sa;
-
-						if (storageAccountInfo != null) {
-							storageAccountInfo.setBlobEndPointURL(
-									Utils.getBlobEP(storageAccountInfo.getBlobEndPointURL())
-							);
-						}
+						storageAccountInfo.setBlobEndPointURL(
+								Utils.getBlobEP(storageAccountInfo.getBlobEndPointURL())
+						);
 						break;
 					}
 

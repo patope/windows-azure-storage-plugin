@@ -455,9 +455,18 @@ public class WAStorageClient {
 				tempPath.deleteRecursive();
 			}
 			
-		} catch (Exception e) {
+		} catch (StorageException e) {
 			e.printStackTrace();
-			throw new WAStorageException(e.getMessage(), e.getCause());
+			throw new WAStorageException(e.getMessage(), e);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+			throw new WAStorageException(e.getMessage(), e);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new WAStorageException(e.getMessage(), e);
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+			throw new WAStorageException(e.getMessage(), e);
 		}
 		return filesUploaded;
 	}
