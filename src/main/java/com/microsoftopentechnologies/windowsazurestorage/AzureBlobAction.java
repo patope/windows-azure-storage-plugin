@@ -4,6 +4,7 @@ import com.microsoftopentechnologies.windowsazurestorage.WAStoragePublisher.WASt
 import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
 import hudson.model.AbstractBuild;
 import hudson.model.Run;
+import hudson.security.SecurityMode;
 import jenkins.model.Jenkins;
 import jenkins.model.RunAction2;
 import org.acegisecurity.Authentication;
@@ -102,8 +103,9 @@ public class AzureBlobAction implements RunAction2 {
 			response.sendError(500, "Azure Storage account global configuration is missing");
 			return;
 		}
-		
-		if (!allowAnonymousAccess && isAnonymousAccess(Jenkins.getAuthentication())) {
+
+		if (Jenkins.getActiveInstance().getSecurity() != SecurityMode.UNSECURED
+				&& !allowAnonymousAccess && isAnonymousAccess(Jenkins.getAuthentication())) {
 			String url = request.getOriginalRequestURI();
 			response.sendRedirect("/login?from=" + url);
 			return;
