@@ -303,6 +303,8 @@ public class WAStoragePublisher extends Recorder {
 	public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
 						   BuildListener listener) throws InterruptedException, IOException {
 		// Get storage account and set formatted blob endpoint url.
+		List<AzureBlob> uploadedBlobs = new ArrayList<AzureBlob>();
+
 		StorageAccountInfo strAcc = getStorageAccount();
 
 		for (final FileSet fileSet : fileSets) {
@@ -344,38 +346,32 @@ public class WAStoragePublisher extends Recorder {
 			}
 
 			try {
-				List<AzureBlob> individualBlobs = new ArrayList<AzureBlob>();
-				List<AzureBlob> archiveBlobs = new ArrayList<AzureBlob>();
-
-				int filesUploaded = WAStorageClient.upload(build, listener, strAcc,
+				uploadedBlobs.addAll(WAStorageClient.upload(build, listener, strAcc,
 						expContainerName, fileSet.isCntPubAccess(), fileSet.isCleanUpContainer(), expFP,
-						expVP, excludeFP, getArtifactUploadType(fileSet), individualBlobs, archiveBlobs,
-						fileSet.getContentType());
+						expVP, excludeFP, getArtifactUploadType(fileSet),
+						fileSet.getContentType()));
 
 				// Mark build unstable if no files are uploaded and the user
 				// doesn't want the build not to fail in that case.
-				if (filesUploaded == 0) {
-					listener.getLogger().println(
-							Messages.WAStoragePublisher_nofiles_uploaded());
-					if (!isDoNotFailIfArchivingReturnsNothing()) {
-						build.setResult(Result.UNSTABLE);
-					}
-				} else {
-					AzureBlob zipArchiveBlob = null;
-					if (getArtifactUploadType(fileSet) != UploadType.INDIVIDUAL) {
-						zipArchiveBlob = archiveBlobs.get(0);
-					}
-					listener.getLogger().println(Messages.WAStoragePublisher_files_uploaded_count(filesUploaded));
-
-					build.addAction(new AzureBlobAction(build, strAcc.getStorageAccName(),
-							expContainerName, individualBlobs, zipArchiveBlob, isAllowAnonymousAccess()));
-				}
 			} catch (Exception e) {
 				e.printStackTrace(listener.error(Messages
 						.WAStoragePublisher_uploaded_err(strAcc.getStorageAccName())));
 				build.setResult(Result.UNSTABLE);
 			}
 		}
+
+		build.addAction(new AzureBlobAction(build, strAcc.getStorageAccName(),
+				uploadedBlobs, isAllowAnonymousAccess()));
+
+		if (uploadedBlobs.isEmpty()) {
+			listener.getLogger().println(
+					Messages.WAStoragePublisher_nofiles_uploaded());
+			if (!isDoNotFailIfArchivingReturnsNothing()) {
+				build.setResult(Result.UNSTABLE);
+			}
+		}
+
+		listener.getLogger().println(Messages.WAStoragePublisher_files_uploaded_count(uploadedBlobs.size()));
 
 		return true;
 	}

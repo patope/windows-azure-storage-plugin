@@ -14,55 +14,31 @@
  */
 package com.microsoftopentechnologies.windowsazurestorage;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.FileOutputStream;
-import java.io.File;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.EnumSet;
-import java.util.GregorianCalendar;
-import java.util.List;
-import java.util.StringTokenizer;
-import java.util.TimeZone;
-import java.util.logging.Logger;
-
-import org.apache.commons.lang.time.DurationFormatUtils;
-import org.apache.tools.ant.types.FileSet;
-import org.apache.tools.ant.DirectoryScanner;
-
-import org.springframework.util.AntPathMatcher;
-
-import hudson.FilePath;
-import hudson.model.BuildListener;
-import hudson.model.AbstractBuild;
-import hudson.util.DirScanner.*;
-
 import com.microsoft.azure.storage.CloudStorageAccount;
 import com.microsoft.azure.storage.RetryNoRetry;
 import com.microsoft.azure.storage.StorageCredentialsAccountAndKey;
 import com.microsoft.azure.storage.StorageException;
-import com.microsoft.azure.storage.blob.BlobContainerPermissions;
-import com.microsoft.azure.storage.blob.BlobContainerPublicAccessType;
-import com.microsoft.azure.storage.blob.BlobRequestOptions;
-import com.microsoft.azure.storage.blob.CloudBlob;
-import com.microsoft.azure.storage.blob.CloudBlobClient;
-import com.microsoft.azure.storage.blob.CloudBlobContainer;
-import com.microsoft.azure.storage.blob.CloudBlobDirectory;
-import com.microsoft.azure.storage.blob.CloudBlockBlob;
-import com.microsoft.azure.storage.blob.ListBlobItem;
-import com.microsoft.azure.storage.blob.SharedAccessBlobPermissions;
-import com.microsoft.azure.storage.blob.SharedAccessBlobPolicy;
+import com.microsoft.azure.storage.blob.*;
 import com.microsoftopentechnologies.windowsazurestorage.WAStoragePublisher.UploadType;
 import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
 import com.microsoftopentechnologies.windowsazurestorage.exceptions.WAStorageException;
 import com.microsoftopentechnologies.windowsazurestorage.helper.Utils;
-import java.util.Arrays;
+import hudson.FilePath;
+import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
+import hudson.util.DirScanner.Glob;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.time.DurationFormatUtils;
+import org.springframework.util.AntPathMatcher;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.*;
+import java.util.logging.Logger;
 
 public class WAStorageClient {
 	private static final Logger LOGGER = Logger.getLogger(WAStorageClient.class.getName());
@@ -298,7 +274,7 @@ public class WAStorageClient {
 	 * @param listener
 	 * @param strAcc
 	 *            storage account information.
-	 * @param expContainerName
+	 * @param containerName
 	 *            container name.
 	 * @param cntPubAccess
 	 *            denotes if container is publicly accessible.
@@ -310,26 +286,24 @@ public class WAStorageClient {
 	 * @param excludeFP
 	 *            File Path in ant glob syntax to exclude from upload
 	 * @param uploadType
-	 * @param individualBlobs
-	 * @param archiveBlobs
 	 * @param contentType
 	 * @return filesUploaded number of files that are uploaded.
 	 * @throws WAStorageException
 	 */
-	public static int upload(AbstractBuild<?, ?> build, BuildListener listener,
-							 StorageAccountInfo strAcc, String expContainerName,
+	public static List<AzureBlob> upload(AbstractBuild<?, ?> build, BuildListener listener,
+							 StorageAccountInfo strAcc, String containerName,
 							 boolean cntPubAccess, boolean cleanUpContainer, String expFP,
 							 String expVP, String excludeFP, UploadType uploadType,
-							 List<AzureBlob> individualBlobs, List<AzureBlob> archiveBlobs, String contentType) throws WAStorageException {
+							 String contentType) throws WAStorageException {
 
-		int filesUploaded = 0; // Counter to track no. of files that are uploaded
+        List<AzureBlob> blobsUploaded = new ArrayList<>(); // track files that are uploaded
 
 		try {
 			FilePath workspacePath = build.getWorkspace();
 			if (workspacePath == null) {
 				listener.getLogger().println(
 						Messages.AzureStorageBuilder_ws_na());
-				return filesUploaded;
+				return blobsUploaded;
 			}
 			StringTokenizer strTokens = new StringTokenizer(expFP, fpSeparator);
 
@@ -339,7 +313,7 @@ public class WAStorageClient {
 			CloudBlobContainer container = WAStorageClient
 					.getBlobContainerReference(strAcc.getStorageAccName(),
 							strAcc.getStorageAccountKey(),
-							strAcc.getBlobEndPointURL(), expContainerName,
+							strAcc.getBlobEndPointURL(), containerName,
 							true, true, cntPubAccess);
 
 			// Delete previous contents if cleanup is needed
@@ -354,7 +328,7 @@ public class WAStorageClient {
 			if (excludeFP != null) {
 				excludesWithoutZip = excludeFP + "," + excludesWithoutZip;
 			}
-			String archiveIncludes = "";
+			List<String> archiveIncludes = new ArrayList<>();
 			
 			while (strTokens.hasMoreElements()) {
 				String fileName = strTokens.nextToken();
@@ -383,12 +357,11 @@ public class WAStorageClient {
 					}
 				}
 				
-				archiveIncludes += "," + fileName;
+				archiveIncludes.add(fileName);
 				
 				// List all the paths without the zip archives.
 				FilePath[] paths = workspacePath.list(fileName, excludesWithoutZip);
-				filesUploaded += paths.length;
-				
+
 				URI workspaceURI = workspacePath.toURI();
 
 				if (paths.length != 0) {
@@ -419,17 +392,17 @@ public class WAStorageClient {
 
 							upload(listener, blob, src);
 
-							individualBlobs.add(new AzureBlob(blob.getName(),blob.getUri().toString().replace("http://", "https://")));
+                            blobsUploaded.add(new AzureBlob(containerName, blob.getName(),blob.getUri().toString().replace("http://", "https://")));
 						}
 					}
 				}
 			}
 			
-			if (filesUploaded != 0 && (uploadType != UploadType.INDIVIDUAL)) {
+			if (blobsUploaded.isEmpty() && uploadType != UploadType.INDIVIDUAL) {
 				// Create a temp dir for the upload
 				FilePath tempPath = workspacePath.createTempDir(zipFolderName, null);
 
-				Glob globScanner = new Glob(archiveIncludes, excludesWithoutZip);
+				Glob globScanner = new Glob(StringUtils.join(archiveIncludes, ','), excludesWithoutZip);
 
 				FilePath zipPath = tempPath.child(zipName);
 				workspacePath.zip(zipPath.write(), globScanner);
@@ -450,7 +423,7 @@ public class WAStorageClient {
 				upload(listener, blob, zipPath);
 				// Make sure to note the new blob as an archive blob,
 				// so that it can be specially marked on the azure storage page.
-				archiveBlobs.add(new AzureBlob(blob.getName(),blob.getUri().toString().replace("http://", "https://")));
+                blobsUploaded.add(new AzureBlob(containerName, blob.getName(),blob.getUri().toString().replace("http://", "https://")));
 
 				tempPath.deleteRecursive();
 			}
@@ -468,7 +441,7 @@ public class WAStorageClient {
 			e.printStackTrace();
 			throw new WAStorageException(e.getMessage(), e);
 		}
-		return filesUploaded;
+		return blobsUploaded;
 	}
 
 	/**

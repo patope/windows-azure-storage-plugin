@@ -19,20 +19,16 @@ import java.util.List;
 public class AzureBlobAction implements RunAction2 {
 	private final AbstractBuild build;
 	private final String storageAccountName;
-	private final String containerName;
 	private final boolean allowAnonymousAccess;
-	private final AzureBlob zipArchiveBlob;
 	private final List<AzureBlob> individualBlobs;
 
-	public AzureBlobAction(AbstractBuild build, String storageAccountName, String containerName,
-			List<AzureBlob> individualBlobs, AzureBlob zipArchiveBlob,
+	public AzureBlobAction(AbstractBuild build, String storageAccountName,
+			List<AzureBlob> individualBlobs,
 			boolean allowAnonymousAccess) {
 		this.build = build;
 		this.storageAccountName = storageAccountName;
-		this.containerName = containerName;
 		this.individualBlobs = individualBlobs;
 		this.allowAnonymousAccess = allowAnonymousAccess;
-		this.zipArchiveBlob = zipArchiveBlob;
 	}
 	
 	public String getDisplayName() {
@@ -47,10 +43,6 @@ public class AzureBlobAction implements RunAction2 {
 		return "Azure";
 	}
 	
-	public AzureBlob getZipArchiveBlob() {
-		return zipArchiveBlob;
-	}
-
 	public void onAttached(Run arg0) {
 	}
 
@@ -68,10 +60,6 @@ public class AzureBlobAction implements RunAction2 {
 	
 	public String getStorageAccountName() {
 		return storageAccountName;
-	}
-	
-	public String getContainerName() {
-		return containerName;
 	}
 	
 	public List<AzureBlob> getIndividualBlobs() {
@@ -92,7 +80,7 @@ public class AzureBlobAction implements RunAction2 {
 		return desc;
 	}
 	
-	private String getSASURL(StorageAccountInfo accountInfo) throws Exception {
+	private String getSASURL(String containerName, StorageAccountInfo accountInfo) throws Exception {
 		try {
 			return WAStorageClient.generateSASURL(accountInfo.getStorageAccName(), accountInfo.getStorageAccountKey(), 
 					containerName, accountInfo.getBlobEndPointURL());
@@ -130,21 +118,10 @@ public class AzureBlobAction implements RunAction2 {
 		String blobName = queryPath.substring(1);
 		
 		// Check the archive blob if it is non-null
-		if (zipArchiveBlob != null) {
-			if (zipArchiveBlob.getBlobName().equals(blobName)) {
-				try {
-					response.sendRedirect2(zipArchiveBlob.getBlobURL()+"?"+getSASURL(accountInfo));
-				} catch(Exception e) {
-					response.sendError(500, "Error occurred while downloading artifact "+e.getMessage());
-				}
-				return;
-			}
-		}
-		
 		for (AzureBlob blob : individualBlobs) {
 			if (blob.getBlobName().equals(blobName)) {
 				try {
-					response.sendRedirect2(blob.getBlobURL()+"?"+getSASURL(accountInfo));
+					response.sendRedirect2(blob.getBlobURL()+"?"+getSASURL(blob.getContainerName(), accountInfo));
 				} catch(Exception e) {
 					response.sendError(500, "Error occurred while downloading artifact "+e.getMessage());
 				}
