@@ -32,6 +32,9 @@
                      <f:textbox />
                 </f:entry>
 
+                <f:entry title="${%cacheControl}" field="cacheControl" help="/plugin/windows-azure-storage/help-cacheControl.html">
+                     <f:textbox />
+                </f:entry>
 
                 <f:advanced>
 

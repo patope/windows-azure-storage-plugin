@@ -287,14 +287,15 @@ public class WAStorageClient {
 	 *            File Path in ant glob syntax to exclude from upload
 	 * @param uploadType
 	 * @param contentType
+	 * @param cacheControl
 	 * @return filesUploaded number of files that are uploaded.
 	 * @throws WAStorageException
 	 */
 	public static List<AzureBlob> upload(AbstractBuild<?, ?> build, BuildListener listener,
-							 StorageAccountInfo strAcc, String containerName,
-							 boolean cntPubAccess, boolean cleanUpContainer, String expFP,
-							 String expVP, String excludeFP, UploadType uploadType,
-							 String contentType) throws WAStorageException {
+										 StorageAccountInfo strAcc, String containerName,
+										 boolean cntPubAccess, boolean cleanUpContainer, String expFP,
+										 String expVP, String excludeFP, UploadType uploadType,
+										 String contentType, String cacheControl) throws WAStorageException {
 
         List<AzureBlob> blobsUploaded = new ArrayList<>(); // track files that are uploaded
 
@@ -389,6 +390,9 @@ public class WAStorageClient {
 							if (!Utils.isNullOrEmpty(contentType)) {
 								blob.getProperties().setContentType(contentType);
 							}
+							if (!Utils.isNullOrEmpty(cacheControl)) {
+								blob.getProperties().setCacheControl(cacheControl);
+							}
 
 							upload(listener, blob, src);
 
@@ -418,6 +422,9 @@ public class WAStorageClient {
 				CloudBlockBlob blob = container.getBlockBlobReference(blobURI);
 				if (!Utils.isNullOrEmpty(contentType)) {
 					blob.getProperties().setContentType(contentType);
+				}
+				if (!Utils.isNullOrEmpty(cacheControl)) {
+					blob.getProperties().setCacheControl(cacheControl);
 				}
 
 				upload(listener, blob, zipPath);

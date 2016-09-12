@@ -122,6 +122,7 @@ public class WAStoragePublisher extends Recorder {
 					excludeFilesPath,
 					virtualPath,
 					contentType,
+					null,
 					cntPubAccess,
 					cleanUpContainer,
 					uploadArtifactsOnlyIfSuccessful,
@@ -349,7 +350,7 @@ public class WAStoragePublisher extends Recorder {
 				uploadedBlobs.addAll(WAStorageClient.upload(build, listener, strAcc,
 						expContainerName, fileSet.isCntPubAccess(), fileSet.isCleanUpContainer(), expFP,
 						expVP, excludeFP, getArtifactUploadType(fileSet),
-						fileSet.getContentType()));
+						fileSet.getContentType(), fileSet.getCacheControl()));
 
 				// Mark build unstable if no files are uploaded and the user
 				// doesn't want the build not to fail in that case.
@@ -633,6 +634,8 @@ public class WAStoragePublisher extends Recorder {
 
 		private String contentType;
 
+		private String cacheControl;
+
 		private boolean cntPubAccess;
 
 		private boolean cleanUpContainer;
@@ -661,6 +664,7 @@ public class WAStoragePublisher extends Recorder {
 					   String excludeFilesPath,
 					   String virtualPath,
 					   String contentType,
+					   String cacheControl,
 					   boolean cntPubAccess,
 					   boolean cleanUpContainer,
 					   boolean uploadArtifactsOnlyIfSuccessful,
@@ -671,6 +675,7 @@ public class WAStoragePublisher extends Recorder {
 			this.excludeFilesPath = excludeFilesPath;
 			this.virtualPath = virtualPath;
 			this.contentType = contentType;
+			this.cacheControl = cacheControl;
 			this.cntPubAccess = cntPubAccess;
 			this.cleanUpContainer = cleanUpContainer;
 			this.uploadArtifactsOnlyIfSuccessful = uploadArtifactsOnlyIfSuccessful;
@@ -716,6 +721,14 @@ public class WAStoragePublisher extends Recorder {
 
 		public void setContentType(String contentType) {
 			this.contentType = contentType;
+		}
+
+		public String getCacheControl() {
+			return cacheControl;
+		}
+
+		public void setCacheControl(String cacheControl) {
+			this.cacheControl = cacheControl;
 		}
 
 		public boolean isCntPubAccess() {
