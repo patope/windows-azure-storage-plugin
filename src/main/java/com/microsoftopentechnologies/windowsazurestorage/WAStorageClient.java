@@ -126,7 +126,7 @@ public class WAStorageClient {
 		if (!allowRetry) {
 			// Setting no retry policy
 			RetryNoRetry rnr = new RetryNoRetry();
-			serviceClient.setRetryPolicyFactory(rnr);
+			serviceClient.getDefaultRequestOptions().setRetryPolicyFactory(rnr);
 		}
 
 		container = serviceClient.getContainerReference(containerName);
